@@ -1198,18 +1198,27 @@ class OAuthManager:
             # If any roles are found, check if they match the allowed or admin roles
             if oauth_roles:
                 # If role management is enabled, and matching roles are provided, use the roles
+                role_found = False
                 for allowed_role in oauth_allowed_roles:
                     # If the user has any of the allowed roles, assign the role "user"
                     if allowed_role in oauth_roles:
                         log.debug("Assigned user the user role")
                         role = "user"
+                        role_found = True
                         break
                 for admin_role in oauth_admin_roles:
                     # If the user has any of the admin roles, assign the role "admin"
                     if admin_role in oauth_roles:
                         log.debug("Assigned user the admin role")
                         role = "admin"
+                        role_found = True
                         break
+                # If allowed and admin roles defined but neither found, raise a 403 deny user access
+                if (oauth_allowed_roles or oauth_admin_roles) and not role_found:
+                    raise HTTPException(
+                        status.HTTP_403_FORBIDDEN,
+                        detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
+                    )
             else:
                 # No roles for neither user nor admin found, raise a 403 to deny user access
                 raise HTTPException(
